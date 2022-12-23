@@ -1,4 +1,4 @@
-import {CommonRoutesConfig} from './common.routes.config'
+import {CommonRoutesConfig} from '../common/common.routes.config'
 
 import express from 'express'
 
@@ -20,7 +20,7 @@ export class UsersRoutes extends CommonRoutesConfig{
         })
 
 
-        this.app.route('user/:userId')
+        this.app.route('/users/:userId')
         .all( (req:express.Request , res:express.Response,  next:express.NextFunction )=> {
             next()
         })
