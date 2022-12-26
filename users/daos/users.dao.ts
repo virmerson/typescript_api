@@ -52,6 +52,8 @@ class UsersDao{
                     currentUser[field] =  user[field]
                 }
             }
+            
+            return `${userId} patched `
     }
 
     async removeUserById(userId: string) {
@@ -75,3 +77,5 @@ class UsersDao{
     }
     
 }
+
+export default new UsersDao();
