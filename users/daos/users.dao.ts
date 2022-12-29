@@ -33,7 +33,7 @@ class UsersDao{
         return `${user.id} updated via put`
     }
 
-    async  patchUserById(userId:string, user:PatchUserDto){
+    async patchUserById(userId:string, user:PatchUserDto){
             const objIndex = this.users.findIndex( (obj:{id:string}) => { obj.id===userId })
 
             let currentUser:CreateUserDto = this.users[objIndex]
