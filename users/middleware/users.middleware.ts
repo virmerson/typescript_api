@@ -75,3 +75,5 @@ class UsersMiddleware{
 
 
 }
+
+export default new UsersMiddleware()
