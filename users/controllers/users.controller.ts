@@ -14,7 +14,7 @@ class UsersController{
 
     }
     async getUserById(req:express.Request, res:express.Response){
-        const user= usersService.readById(req.body.id)
+        const user= await usersService.readById(req.body.id)
         res.status(200).send(user)
     }
     async createUser(req:express.Request, res:express.Response){

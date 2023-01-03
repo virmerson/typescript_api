@@ -66,7 +66,7 @@ class UsersMiddleware{
         }
 
         async extractUserId(req: express.Request,res: express.Response, next: express.NextFunction) {
-            const user = await usersService.readById(req.params.id)
+            const user = await usersService.readById(req.params.userId)
 
             req.body.id = req.params.userId
             next()

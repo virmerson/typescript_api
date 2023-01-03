@@ -24,7 +24,8 @@ class UsersDao{
     }
 
     async getUserById(userId:string){
-        return  this.users.find( (user: {id:string})=>{user.id===userId}  )
+        const user=  this.users.find( (user)=> user.id==userId  )
+        return user;
     }
 
     async putUserById(userId:string, user:PutUserDto){
