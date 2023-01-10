@@ -1,4 +1,15 @@
 "use strict";
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -39,100 +50,90 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+var mongoose_service_1 = __importDefault(require("../../common/service/mongoose.service"));
+var common_permissionflag_enum_1 = require("../../common/middleware/common.permissionflag.enum");
 var shortid_1 = __importDefault(require("shortid"));
 var debug_1 = __importDefault(require("debug"));
 var log = (0, debug_1.default)('app:in-memory-dao');
 var UsersDao = /** @class */ (function () {
     function UsersDao() {
-        this.users = [];
+        this.Schema = mongoose_service_1.default.getMongoose().Schema;
+        this.userSchema = new this.Schema({
+            _id: String,
+            email: String,
+            password: { type: String, select: false },
+            firstName: String,
+            lastName: String,
+            permissionFlags: Number,
+        }, { id: false });
+        this.User = mongoose_service_1.default.getMongoose().model('User', this.userSchema);
         log('Created a new instance of UsersDao');
     }
-    UsersDao.prototype.addUser = function (user) {
+    UsersDao.prototype.addUser = function (userFields) {
         return __awaiter(this, void 0, void 0, function () {
+            var userId, user;
             return __generator(this, function (_a) {
-                user.id = shortid_1.default.generate();
-                this.users.push(user);
-                return [2 /*return*/, user.id];
+                switch (_a.label) {
+                    case 0:
+                        userId = shortid_1.default.generate();
+                        user = new this.User(__assign(__assign({ _id: userId }, userFields), { permissionFlags: common_permissionflag_enum_1.PermissionFlag.FREE_PERMISSION }));
+                        return [4 /*yield*/, user.save()];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/, userId];
+                }
             });
         });
     };
-    UsersDao.prototype.getUsers = function () {
+    UsersDao.prototype.getUsers = function (limit, page) {
+        if (limit === void 0) { limit = 25; }
+        if (page === void 0) { page = 0; }
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                return [2 /*return*/, this.users];
+                //1-25  (p 1)
+                //26 -50
+                //
+                return [2 /*return*/, this.User.find().limit(limit).skip(limit * page).exec()];
             });
         });
     };
     UsersDao.prototype.getUserById = function (userId) {
         return __awaiter(this, void 0, void 0, function () {
-            var user;
             return __generator(this, function (_a) {
-                user = this.users.find(function (user) { return user.id == userId; });
-                return [2 /*return*/, user];
+                return [2 /*return*/, this.User.findOne({ _id: userId }).populate('User').exec()];
             });
         });
     };
-    UsersDao.prototype.putUserById = function (userId, user) {
+    UsersDao.prototype.updateUserById = function (userId, userFields) {
         return __awaiter(this, void 0, void 0, function () {
-            var objIndex;
+            var existingUser;
             return __generator(this, function (_a) {
-                objIndex = this.users.findIndex(function (obj) { obj.id === userId; });
-                this.users.splice(objIndex, 1, user);
-                return [2 /*return*/, "".concat(user.id, " updated via put")];
-            });
-        });
-    };
-    UsersDao.prototype.patchUserById = function (userId, user) {
-        return __awaiter(this, void 0, void 0, function () {
-            var objIndex, currentUser, allowedFields, _i, allowedFields_1, field;
-            return __generator(this, function (_a) {
-                objIndex = this.users.findIndex(function (obj) { return obj.id === userId; });
-                currentUser = this.users[objIndex];
-                allowedFields = [
-                    'email',
-                    'password',
-                    'firstName',
-                    'lastName',
-                    'permissionLevel'
-                ];
-                for (_i = 0, allowedFields_1 = allowedFields; _i < allowedFields_1.length; _i++) {
-                    field = allowedFields_1[_i];
-                    if (field in user) {
-                        // @ts-ignore
-                        currentUser[field] = user[field];
-                    }
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.User.findOneAndUpdate({ _id: userId }, { $set: userFields }, { new: true }).exec()];
+                    case 1:
+                        existingUser = _a.sent();
+                        return [2 /*return*/, existingUser];
                 }
-                return [2 /*return*/, "".concat(userId, " patched ")];
             });
         });
     };
     UsersDao.prototype.removeUserById = function (userId) {
         return __awaiter(this, void 0, void 0, function () {
-            var objIndex;
             return __generator(this, function (_a) {
-                objIndex = this.users.findIndex(function (obj) { return obj.id === userId; });
-                this.users.splice(objIndex, 1);
-                return [2 /*return*/, "".concat(userId, " removed")];
+                this.User.deleteOne({ _id: userId }).exec();
+                return [2 /*return*/];
             });
         });
     };
     UsersDao.prototype.getUserByEmail = function (email) {
         return __awaiter(this, void 0, void 0, function () {
-            var objIndex, currentUser;
             return __generator(this, function (_a) {
-                objIndex = this.users.findIndex(function (obj) { return obj.email === email; });
-                currentUser = this.users[objIndex];
-                if (currentUser) {
-                    return [2 /*return*/, currentUser];
-                }
-                else {
-                    return [2 /*return*/, null];
-                }
-                return [2 /*return*/];
+                log("getUserByEmail: " + email);
+                return [2 /*return*/, this.User.findOne({ email: email }).exec()];
             });
         });
     };
     return UsersDao;
 }());
 exports.default = new UsersDao();
-//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoidXNlcnMuZGFvLmpzIiwic291cmNlUm9vdCI6IiIsInNvdXJjZXMiOlsiLi4vLi4vLi4vdXNlcnMvZGFvcy91c2Vycy5kYW8udHMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7QUFJQSxvREFBOEI7QUFDOUIsZ0RBQTBCO0FBRTFCLElBQU0sR0FBRyxHQUFvQixJQUFBLGVBQUssRUFBRSxtQkFBbUIsQ0FBQyxDQUFBO0FBRXhEO0lBR0k7UUFGQSxVQUFLLEdBQXdCLEVBQUUsQ0FBQTtRQUczQixHQUFHLENBQUMsb0NBQW9DLENBQUMsQ0FBQTtJQUM3QyxDQUFDO0lBRUssMEJBQU8sR0FBYixVQUFlLElBQWtCOzs7Z0JBQzdCLElBQUksQ0FBQyxFQUFFLEdBQUksaUJBQU8sQ0FBQyxRQUFRLEVBQUUsQ0FBQTtnQkFDN0IsSUFBSSxDQUFDLEtBQUssQ0FBQyxJQUFJLENBQUMsSUFBSSxDQUFDLENBQUE7Z0JBQ3JCLHNCQUFPLElBQUksQ0FBQyxFQUFFLEVBQUE7OztLQUNqQjtJQUNLLDJCQUFRLEdBQWQ7OztnQkFDSSxzQkFBTyxJQUFJLENBQUMsS0FBSyxFQUFBOzs7S0FDcEI7SUFFSyw4QkFBVyxHQUFqQixVQUFrQixNQUFhOzs7O2dCQUNyQixJQUFJLEdBQUcsSUFBSSxDQUFDLEtBQUssQ0FBQyxJQUFJLENBQUUsVUFBQyxJQUFJLElBQUksT0FBQSxJQUFJLENBQUMsRUFBRSxJQUFFLE1BQU0sRUFBZixDQUFlLENBQUcsQ0FBQTtnQkFDekQsc0JBQU8sSUFBSSxFQUFDOzs7S0FDZjtJQUVLLDhCQUFXLEdBQWpCLFVBQWtCLE1BQWEsRUFBRSxJQUFlOzs7O2dCQUN0QyxRQUFRLEdBQUcsSUFBSSxDQUFDLEtBQUssQ0FBQyxTQUFTLENBQUUsVUFBQyxHQUFnQixJQUFNLEdBQUcsQ0FBQyxFQUFFLEtBQUcsTUFBTSxDQUFBLENBQUEsQ0FBQyxDQUFDLENBQUE7Z0JBQy9FLElBQUksQ0FBQyxLQUFLLENBQUMsTUFBTSxDQUFDLFFBQVEsRUFBRSxDQUFDLEVBQUUsSUFBSSxDQUFDLENBQUE7Z0JBQ3BDLHNCQUFPLFVBQUcsSUFBSSxDQUFDLEVBQUUscUJBQWtCLEVBQUE7OztLQUN0QztJQUVLLGdDQUFhLEdBQW5CLFVBQW9CLE1BQWEsRUFBRSxJQUFpQjs7OztnQkFDdEMsUUFBUSxHQUFHLElBQUksQ0FBQyxLQUFLLENBQUMsU0FBUyxDQUFFLFVBQUMsR0FBZSxJQUFNLE9BQUEsR0FBRyxDQUFDLEVBQUUsS0FBRyxNQUFNLEVBQWYsQ0FBZSxDQUFFLENBQUE7Z0JBRTFFLFdBQVcsR0FBaUIsSUFBSSxDQUFDLEtBQUssQ0FBQyxRQUFRLENBQUMsQ0FBQTtnQkFFaEQsYUFBYSxHQUFHO29CQUNoQixPQUFPO29CQUNQLFVBQVU7b0JBQ1YsV0FBVztvQkFDWCxVQUFVO29CQUNWLGlCQUFpQjtpQkFDcEIsQ0FBQTtnQkFFRCxXQUErQixFQUFiLCtCQUFhLEVBQWIsMkJBQWEsRUFBYixJQUFhLEVBQUM7b0JBQXZCLEtBQUs7b0JBQ1YsSUFBSSxLQUFLLElBQUksSUFBSSxFQUFFO3dCQUNmLGFBQWE7d0JBQ2IsV0FBVyxDQUFDLEtBQUssQ0FBQyxHQUFJLElBQUksQ0FBQyxLQUFLLENBQUMsQ0FBQTtxQkFDcEM7aUJBQ0o7Z0JBRUQsc0JBQU8sVUFBRyxNQUFNLGNBQVcsRUFBQTs7O0tBQ2xDO0lBRUssaUNBQWMsR0FBcEIsVUFBcUIsTUFBYzs7OztnQkFDekIsUUFBUSxHQUFHLElBQUksQ0FBQyxLQUFLLENBQUMsU0FBUyxDQUNqQyxVQUFDLEdBQW1CLElBQUssT0FBQSxHQUFHLENBQUMsRUFBRSxLQUFLLE1BQU0sRUFBakIsQ0FBaUIsQ0FDN0MsQ0FBQztnQkFDRixJQUFJLENBQUMsS0FBSyxDQUFDLE1BQU0sQ0FBQyxRQUFRLEVBQUUsQ0FBQyxDQUFDLENBQUM7Z0JBQy9CLHNCQUFPLFVBQUcsTUFBTSxhQUFVLEVBQUM7OztLQUM5QjtJQUVLLGlDQUFjLEdBQXBCLFVBQXFCLEtBQWE7Ozs7Z0JBQ3hCLFFBQVEsR0FBRyxJQUFJLENBQUMsS0FBSyxDQUFDLFNBQVMsQ0FDakMsVUFBQyxHQUFzQixJQUFLLE9BQUEsR0FBRyxDQUFDLEtBQUssS0FBSyxLQUFLLEVBQW5CLENBQW1CLENBQ2xELENBQUM7Z0JBQ0UsV0FBVyxHQUFHLElBQUksQ0FBQyxLQUFLLENBQUMsUUFBUSxDQUFDLENBQUM7Z0JBQ3ZDLElBQUksV0FBVyxFQUFFO29CQUNiLHNCQUFPLFdBQVcsRUFBQztpQkFDdEI7cUJBQU07b0JBQ0gsc0JBQU8sSUFBSSxFQUFDO2lCQUNmOzs7O0tBQ0o7SUFFTCxlQUFDO0FBQUQsQ0FBQyxBQXRFRCxJQXNFQztBQUVELGtCQUFlLElBQUksUUFBUSxFQUFFLENBQUMifQ==
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoidXNlcnMuZGFvLmpzIiwic291cmNlUm9vdCI6IiIsInNvdXJjZXMiOlsiLi4vLi4vLi4vdXNlcnMvZGFvcy91c2Vycy5kYW8udHMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7OztBQUFBLDJGQUFvRTtBQUlwRSxpR0FBaUY7QUFFakYsb0RBQThCO0FBQzlCLGdEQUEwQjtBQUcxQixJQUFNLEdBQUcsR0FBb0IsSUFBQSxlQUFLLEVBQUUsbUJBQW1CLENBQUMsQ0FBQTtBQUV4RDtJQWVJO1FBYkQsV0FBTSxHQUFJLDBCQUFlLENBQUMsV0FBVyxFQUFFLENBQUMsTUFBTSxDQUFDO1FBRS9DLGVBQVUsR0FBSSxJQUFJLElBQUksQ0FBQyxNQUFNLENBQUM7WUFDekIsR0FBRyxFQUFFLE1BQU07WUFDWCxLQUFLLEVBQUUsTUFBTTtZQUNiLFFBQVEsRUFBRSxFQUFFLElBQUksRUFBRSxNQUFNLEVBQUUsTUFBTSxFQUFFLEtBQUssRUFBRTtZQUN6QyxTQUFTLEVBQUUsTUFBTTtZQUNqQixRQUFRLEVBQUUsTUFBTTtZQUNoQixlQUFlLEVBQUUsTUFBTTtTQUMxQixFQUFFLEVBQUUsRUFBRSxFQUFFLEtBQUssRUFBRSxDQUFDLENBQUE7UUFFakIsU0FBSSxHQUFHLDBCQUFlLENBQUMsV0FBVyxFQUFFLENBQUMsS0FBSyxDQUFDLE1BQU0sRUFBQyxJQUFJLENBQUMsVUFBVSxDQUFFLENBQUE7UUFHL0QsR0FBRyxDQUFDLG9DQUFvQyxDQUFDLENBQUE7SUFDN0MsQ0FBQztJQUVLLDBCQUFPLEdBQWIsVUFBZSxVQUF3Qjs7Ozs7O3dCQUM5QixNQUFNLEdBQUksaUJBQU8sQ0FBQyxRQUFRLEVBQUUsQ0FBQzt3QkFDN0IsSUFBSSxHQUFHLElBQUksSUFBSSxDQUFDLElBQUkscUJBQ3pCLEdBQUcsRUFBRyxNQUFNLElBQ1QsVUFBVSxLQUNiLGVBQWUsRUFBRSwyQ0FBYyxDQUFDLGVBQWUsSUFDOUMsQ0FBQTt3QkFFRCxxQkFBTSxJQUFJLENBQUMsSUFBSSxFQUFFLEVBQUE7O3dCQUFqQixTQUFpQixDQUFBO3dCQUNqQixzQkFBTyxNQUFNLEVBQUE7Ozs7S0FDaEI7SUFDSywyQkFBUSxHQUFkLFVBQWUsS0FBVSxFQUFFLElBQU07UUFBbEIsc0JBQUEsRUFBQSxVQUFVO1FBQUUscUJBQUEsRUFBQSxRQUFNOzs7Z0JBRTdCLGFBQWE7Z0JBQ2IsUUFBUTtnQkFDUixFQUFFO2dCQUNGLHNCQUFPLElBQUksQ0FBQyxJQUFJLENBQUMsSUFBSSxFQUFFLENBQUMsS0FBSyxDQUFDLEtBQUssQ0FBQyxDQUFDLElBQUksQ0FBQyxLQUFLLEdBQUMsSUFBSSxDQUFDLENBQUMsSUFBSSxFQUFFLEVBQUE7OztLQUcvRDtJQUVLLDhCQUFXLEdBQWpCLFVBQWtCLE1BQWE7OztnQkFDM0Isc0JBQU8sSUFBSSxDQUFDLElBQUksQ0FBQyxPQUFPLENBQUMsRUFBQyxHQUFHLEVBQUMsTUFBTSxFQUFDLENBQUMsQ0FBQyxRQUFRLENBQUMsTUFBTSxDQUFDLENBQUMsSUFBSSxFQUFFLEVBQUE7OztLQUNqRTtJQUVLLGlDQUFjLEdBQXBCLFVBQXFCLE1BQWEsRUFBRSxVQUFvQzs7Ozs7NEJBRWpELHFCQUFNLElBQUksQ0FBQyxJQUFJLENBQUMsZ0JBQWdCLENBRS9DLEVBQUUsR0FBRyxFQUFDLE1BQU0sRUFBQyxFQUNiLEVBQUMsSUFBSSxFQUFFLFVBQVUsRUFBQyxFQUNsQixFQUFDLEdBQUcsRUFBRSxJQUFJLEVBQUMsQ0FFZixDQUFDLElBQUksRUFBRSxFQUFBOzt3QkFOSCxZQUFZLEdBQUcsU0FNWjt3QkFFUCxzQkFBTyxZQUFZLEVBQUE7Ozs7S0FDdEI7SUFJSyxpQ0FBYyxHQUFwQixVQUFxQixNQUFjOzs7Z0JBQy9CLElBQUksQ0FBQyxJQUFJLENBQUMsU0FBUyxDQUFDLEVBQUMsR0FBRyxFQUFDLE1BQU0sRUFBQyxDQUFDLENBQUMsSUFBSSxFQUFFLENBQUE7Ozs7S0FDM0M7SUFFSyxpQ0FBYyxHQUFwQixVQUFxQixLQUFhOzs7Z0JBRTlCLEdBQUcsQ0FBQyxrQkFBa0IsR0FBRSxLQUFLLENBQUMsQ0FBQTtnQkFDL0Isc0JBQU8sSUFBSSxDQUFDLElBQUksQ0FBQyxPQUFPLENBQUMsRUFBQyxLQUFLLEVBQUMsS0FBSyxFQUFDLENBQUMsQ0FBQyxJQUFJLEVBQUUsRUFBQTs7O0tBQ2hEO0lBRUwsZUFBQztBQUFELENBQUMsQUFyRUQsSUFxRUM7QUFFRCxrQkFBZSxJQUFJLFFBQVEsRUFBRSxDQUFDIn0=

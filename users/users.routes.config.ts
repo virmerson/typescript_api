@@ -35,7 +35,7 @@ export class UsersRoutes extends CommonRoutesConfig{
 
         
 
-            this.app.patch('/users/:userId', [
+        this.app.patch('/users/:userId', [
                 usersMiddleware.validatePatchEmail, 
                 usersController.patch])
         

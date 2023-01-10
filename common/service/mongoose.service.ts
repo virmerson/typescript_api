@@ -10,14 +10,17 @@ class MongooseService{
     private mongooseOptions = {
         useNewUrlParser: true,
         useUnifiedTopology: true,
-        serverSelectionTimeoutMS: 5000,
-        useFindAndModify: false,
+        serverSelectionTimeoutMS: 5000
+
     };
 
     constructor(){
         this.connectWithRetry();
     }
    
+    getMongoose(){
+        return mongoose;
+    }
     connectWithRetry = ()=>{
         log('Attempting MongoDB connection (will retry if needed)');
         mongoose

@@ -15,8 +15,8 @@ class UsersService implements CRUD{
         return usersDao.addUser(resource)
     }
 
-    async putById (id: string, resource: PutUserDto){
-        return usersDao.putUserById(id, resource)
+    async putById (id: string, resource: PutUserDto):Promise<any>{
+        return usersDao.updateUserById(id, resource)
     }
 
 
@@ -28,8 +28,8 @@ class UsersService implements CRUD{
         return usersDao.removeUserById(id)
     }
 
-    async patchById (id: string, resource: PatchUserDto){
-        return usersDao.patchUserById(id, resource)
+    async patchById (id: string, resource: PatchUserDto):Promise<any>{
+        return usersDao.updateUserById(id, resource)
     }
 
     async getUserByEmail(email: string) {
