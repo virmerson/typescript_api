@@ -78,6 +78,11 @@ class UsersDao{
         log("getUserByEmail: "+ email)
        return this.User.findOne({email:email}).exec()
     }
+
+
+    async getUserByEmailWithPassword(email:string){
+        return this.User.findOne({email:email}).select('_id email permissionFlags +password').exec()
+    }
     
 }
 
