@@ -6,7 +6,9 @@ class AuthMiddleware{
 
         async verifyUserPassword(req:express.Request,res:express.Response,next:express.NextFunction){
 
-           const user:any =  usersService.getUserByEmailWithPassword( req.body.email )
+           const user:any =  await usersService.getUserByEmailWithPassword( req.body.email )
+           
+          
 
             if(user){
                 const passwordHash = user.password
