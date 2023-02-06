@@ -4,6 +4,9 @@ import usersMiddleware from './middleware/users.middleware'
 import express from 'express'
 import { body } from 'express-validator'
 import BodyValidationMiddleware from '../common/middleware/body.validation.middleware'
+import jwtMiddleware from '../auth/middleware/jwt.middleware';
+import permissionMiddleware from '../common/middleware/common.permission.middleware';
+import { PermissionFlag } from '../common/middleware/common.permissionflag.enum';
 
 export class UsersRoutes extends CommonRoutesConfig{
  
@@ -15,7 +18,11 @@ export class UsersRoutes extends CommonRoutesConfig{
     configureRoutes(): express.Application {
 
         this.app.route('/users')
-        .get( usersController.listUsers )
+    
+        .get( 
+            jwtMiddleware.validJWTNeeded, 
+            permissionMiddleware.permissionFlagRequired(PermissionFlag.ADMIN_PERMISSION), 
+            usersController.listUsers )
         .post(  
             body('email').isEmail(),
             body('password')
