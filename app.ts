@@ -38,6 +38,10 @@ const loggerOptions: expressWinston.LoggerOptions = {
 
 if (!process.env.DEBUG){
     loggerOptions.meta=false
+
+    if (typeof global.it === 'function') {
+                loggerOptions.level = 'http'; // for non-debug test runs, squelch entirely
+    }
 }
 
 app.use(expressWinston.logger(loggerOptions))
@@ -58,3 +62,5 @@ server.listen(port, ()=>{
 
      console.log(runningMessage)
 })
+
+export default app
