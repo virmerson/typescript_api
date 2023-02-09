@@ -35,7 +35,10 @@ export class UsersRoutes extends CommonRoutesConfig{
         this.app.param(`userId`, usersMiddleware.extractUserId)
         
         this.app.route('/users/:userId')
-         .all( usersMiddleware.validateUserExists)
+         .all( 
+            usersMiddleware.validateUserExists, 
+            jwtMiddleware.validJWTNeeded, 
+            permissionMiddleware.onlySameUserOrAdminCanDoThisAction)
         .get( usersController.getUserById)
         .delete(usersController.removeUser )
 
